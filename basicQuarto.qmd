@@ -1,0 +1,251 @@
+---
+title: "Kester Weather Station"
+author: "Grant and Neil Kester"
+date: "3 November 2023"
+format: 
+  html:
+    embed-resources: true
+---
+
+verion: 0.1
+
+This is our first attempt to chart the Weather Station Data.
+
+```{ojs}
+//| echo: false
+data = FileAttachment("weatherstation.csv").csv({ typed: true })
+```
+
+## Air Temperature
+```{ojs}
+//| echo: false
+measurementTypeTemp = "Air Temperature"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeTemp.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "measurementValue"}).plot({
+marks: [
+  Plot.ruleY([-10,50])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeTemp.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```  
+
+## Air Humidity  
+
+```{ojs}
+//| echo: false
+measurementTypeHumid = "Air Humidity"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeHumid.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([0,100])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeHumid.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```  
+
+## Barometric Pressure
+
+```{ojs}
+//| echo: false
+measurementTypeBarometric = "Barometric Pressure"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeBarometric.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([95000,105000])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeBarometric.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```  
+
+## Light Intensity  
+
+```{ojs}
+//| echo: false
+measurementTypeLight = "Light Intensity"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeLight.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([0,115000])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeLight.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```  
+
+## UV Index  
+
+```{ojs}
+//| echo: false
+measurementTypeUV = "UV Index"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeUV.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([0,20])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeUV.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```
+## Wind Direction
+```{ojs}
+//| echo: false
+measurementTypeWindDir = "Wind Direction Sensor"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeWindDir.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([0,100])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeWindDir.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```
+## Wind Speed
+```{ojs}
+//| echo: false
+measurementTypeWindSpeed = "Wind Speed"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeWindSpeed.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([0,10])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeWindSpeed.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```
+## Rain Guage
+```{ojs}
+//| echo: false
+measurementTypeRain = "Rain Gauge"
+
+Plot.dot(data.filter(function(effort) {
+
+      return measurementTypeRain.includes(effort.type);
+  
+    }),
+{x: "time",
+y: "measurementValue", 
+stroke: "type"}).plot({
+marks: [
+  Plot.ruleY([0,40])
+]
+})
+```
+
+```{ojs}
+//| echo: false
+Inputs.table(data.filter(function(effort) {
+
+      return measurementTypeRain.includes(effort.type);
+  
+    }), 
+    { sort: "time", reverse: true })
+```
+

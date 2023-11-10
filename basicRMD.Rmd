@@ -1,0 +1,73 @@
+---
+title: "Kester Weather Station"
+author: "Grant and Neil Kester"
+date: "3 November 2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(magrittr)
+```
+
+## Get Data
+
+Connect to the database
+
+```{r cars}
+load(file = "./connectionInfo.RData")
+
+con <- DBI::dbConnect(drv = RPostgreSQL::PostgreSQL(),
+                      dbname = db,
+                      host = host,
+                      port = port,
+                      user = user,
+                      password = password)
+
+# DBI::dbGetQuery(conn = con,
+#                 statement = "SELECT * FROM sensor_data WHERE type = 'Air Humidity' LIMIT 10")
+
+measures <- DBI::dbGetQuery(conn = con,
+                            statement = "SELECT * FROM sensor_data") %>%
+  tidyr::drop_na(data = .,type)
+
+DBI::dbDisconnect(conn = con)
+```
+
+```{r}
+measures <- DBI::dbGetQuery(conn = con,
+                            statement = "SELECT * FROM sensor_data WHERE type IS NOT NULL") 
+```
+
+
+```{r}
+measures %>%
+  dplyr::mutate(day = stringr::str_extract(string = time,pattern = "^(0-9,-){10}"))
+  dplyr::group_by(type)
+```
+
+```{r}
+
+ DBI::dbGetQuery(conn = con,
+                            statement = "SELECT date, type, sum(\"measurementValue\") FROM (SELECT date_trunc('day',time) AS date,type,\"measurementValue\" FROM sensor_data) AS A WHERE type IS NOT NULL GROUP BY date,type") 
+```
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+measures %>%
+  dplyr::group_by(type) %>% 
+  dplyr::slice_max(order_by = time,n = 10) %>%
+knitr::kable(x = .)
+```
+
+```{r}
+p <- measures %>%
+  dplyr::filter(type == "Air Humidity") %>%
+ggplot2::ggplot(data = .) +
+  ggplot2::geom_point(ggplot2::aes(x = time, y = measurementValue))
+
+plotly::ggplotly(p = p)
+
+```
