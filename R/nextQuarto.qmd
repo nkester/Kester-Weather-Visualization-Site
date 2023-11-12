@@ -10,17 +10,19 @@ format:
     echo: false
     code-tools: true
     page-layout: full
+    output-file: "WeatherMeasurements"
+    output-ext: ".html"
 ---
 
-version: 0.2
+version: 0.3
 
-This is our first attempt to chart the Weather Station Data.
+We are trying to improve our charting work with Observable JS. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(magrittr)
 
-local <- TRUE
+local <- FALSE
 update <- FALSE
 ```
 
@@ -57,7 +59,7 @@ measure_gather <- function(con, measure_spec, measure_tib, agg_levels){
       measure_tib <- dplyr::bind_rows(measure_tib,
                                       tibble::tibble(aggregate_level = agg,
                                                      temp))
-
+      
       
     }
     
@@ -68,7 +70,11 @@ measure_gather <- function(con, measure_spec, measure_tib, agg_levels){
   
 }
 
-```
+```  
+
+This page displays the measurements taken from our personal weather station. The raw measurements are taken every 15 minutes but we have aggregated the information when pulling it from our `PostgreSQL` database to every hour, day, and month.  
+
+Much improvement is required to make meaningful conclusions from the data and for them to make sense in the context of what the measurements mean.
 
 ## Get Data
 
@@ -121,14 +127,10 @@ if(any(c(!local,update))){
   
   DBI::dbDisconnect(conn = con)
   
-  rm(con,db,host,password,port,user)
-}
-
-if(update){
-  
   save(measure_tib,
        file = "./weatherData.RDS")
   
+  rm(con,db,host,password,port,user)
 }
 
 if(all(local,file.exists("./weatherData.RDS"))){
@@ -155,15 +157,15 @@ if(exists(x = "measure_tib")){
 viewof time_aggregation = Inputs.select(["hour","day","month"], {label: "Time Aggregation"})
 
 viewof measure_type = Inputs.select([
-  "Air Humidity",
-  "Air Temperature",
-  "Barometric Pressure",
-  "Light Intensity",
-  "Rain Gauge",
-  "UV Index",
-  "Wind Direction Sensor",
-  "Wind Speed"], 
-  {label: "Select a measure"})
+"Air Humidity",
+"Air Temperature",
+"Barometric Pressure",
+"Light Intensity",
+"Rain Gauge",
+"UV Index",
+"Wind Direction Sensor",
+"Wind Speed"], 
+{label: "Select a measure"})
 
 
 ```
@@ -173,10 +175,26 @@ viewof measure_type = Inputs.select([
 ## Plot
 
 ```{ojs}
-Plot.dot(filteredData,
-{x: "date",
+Plot.dot(filteredData,{
+x: "date",
 y: "measure", 
-stroke: "measure"}).plot()
+stroke: "measure",
+tip: true
+}).plot()
+```
+
+```{ojs}
+Plot.plot({
+marks: [
+Plot.dot(filteredData, {
+x: "date",
+y: "measure",
+stroke: "measure"
+})
+
+]
+
+})
 ```
 
 {
@@ -194,8 +212,8 @@ measures_trans = transpose(measures)
 
 filteredData = measures_trans.filter(function(weatherdata) {
 
- return time_aggregation.includes(weatherdata.aggregate_level) &&
-        measure_type.includes(weatherdata.type)
+return time_aggregation.includes(weatherdata.aggregate_level) &&
+measure_type.includes(weatherdata.type)
 
 })
 
