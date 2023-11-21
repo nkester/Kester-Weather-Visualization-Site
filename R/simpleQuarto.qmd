@@ -15,7 +15,7 @@ format:
     code-tools: 
       source: https://github.com/nkester/Kester-Weather-Visualization-Site
     page-layout: full
-    output-file: "WeatherMeasurements"
+    output-file: "index"
     output-ext: "html"
 ---
 
