@@ -32,3 +32,17 @@ Login and authenticate. The `--no-localhost` flag is needed when running from a 
 Choose the option fo Firebase Hosting and select the project. Then provide the project directory the files are in. For me this was: `/config/workspace/kesterWeatherSite/site`. 
 
 Once you've made the changes you want, enter the command `firebase deploy` to update the website.
+
+## Plotting with observable
+
+### Resources  
+  * https://observablehq.com/plot/features/plots  
+  * https://d3js.org/  
+  * Data manipulation with Arquero [Quarto](https://quarto.org/docs/interactive/ojs/examples/arquero.html) 
+  
+  
+How to conditionally show marks in a chart. I want to use this to turn on or off certain measures that make sense to be plotted together.  
+`https://observablehq.com/@observablehq/plot-optional-marks?intent=fork`  
+
+Passing date data from `R` to `OJS` converts it back to strings. This explains how to parse the data in `OJS`: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto 
+

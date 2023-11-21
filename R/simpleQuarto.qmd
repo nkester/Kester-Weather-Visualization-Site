@@ -1,7 +1,9 @@
 ---
 title: "Kester Weather Station"
 author: "Grant and Neil Kester"
-date: "12 November 2023"
+date: "21 November 2023"
+theme: 
+  - flatly
 execute: 
   echo: false
 format: 
@@ -14,9 +16,11 @@ format:
     output-ext: "html"
 ---
 
-version: 0.3
+version: 0.3.1
 
 We are trying to improve our charting work with Observable JS. 
+
+> **Update Note:** We have fixed the x-axis labels by properly converting to and dealing with date objects.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -151,9 +155,9 @@ if(exists(x = "measure_tib")){
 # Selections
 
 ```{ojs imports}
-//| echo: true
+//| echo: false
 
-import { aq } from '@uwdata/arquero'
+import { aq, op } from '@uwdata/arquero'
 d3 = require("d3@7")
 parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
 ```
@@ -190,28 +194,8 @@ tip: true
 }).plot()
 ```
 
-```{ojs}
-Plot.plot({
-marks: [
-    Plot.line(filteredData, {
-      x: "date",
-      y: "measure"
-    }),
-    Plot.dot(filteredData, {
-      x: "date",
-      y: "measure",
-      stroke: "measure",
-      fill: "measure"
-    })
-],
-color: {
-  type: "linear",
-  scheme: "turbo",
-  legend: true
-}
 
-})
-```
+The plot as a line graph.
 
 ```{ojs}
 Plot.plot({
@@ -220,156 +204,57 @@ Plot.plot({
       x: "date",
       y: "measure"
     })
-  ],
-  width: 802, 
-  height: 802, 
-  x: { ticks: 3 }, 
-  marginLeft: 50, 
-  color: {
-    legend: true,
-    width: 802,
-    columns: "120px"
-  }
-})
-```  
-
-```{ojs}
-Plot.plot({
-  marks: [
-    Plot.line(filteredData, {
-      x: "date",
-      y: "measure",
-      stroke: "type",
-      strokeWidth: 2,
-      curve: "linear"
-    })
-  ],
-  width: 802, 
-  height: 130, 
-  x: { ticks: 3 }, 
-  marginLeft: 50, 
-  color: {
-    legend: true,
-    width: 802,
-    columns: "120px"
-  }
-})
-```
-
-
-
-```
-line = ({
-  controls: [
-    { type: "text", value: "// Sales over time \nPlot.line(data, {" },
-    { param: "x", value: "date" },
-    { param: "y", value: "measure" },
-    { param: "stroke", value: "type" },
-    {
-      param: "strokeWidth",
-      type: "range",
-      value: 2,
-      min: 0.1,
-      max: 4,
-      step: 0.1
-    },
-    { type: "text", value: "})" }
-  ],
-  plot: (config) => `Plot.plot({
-  marks: [
-    Plot.line(filteredData, {
-      x: "${config.x}",
-      y: "${config.y}",
-      stroke: "${config.stroke}",
-      strokeWidth: ${config.strokeWidth}
-    })
-  ],
-  ${plotConfig}, 
-  ${legendConfig}
-})`
-})
-
-
-// Default legend properties
-legendConfig = `color: {
-    legend: true,
-    width: 300,
-    columns: "120px"
-  }`
-  
-// Default plot properties
-plotConfig = `width: 300, 
-  height: 130, 
-  x: { ticks: 3 }, 
-  marginLeft: 50`
-
-```
-
-Test  
-
-
-
-
-```{ojs}
-Plot.plot({
-  marks: [
-    Plot.line(filteredData, {
-      x: "date",
-      y: "measure"
-    })
-  ],
+  ]//,
 //  width: 300,
-  height: 130,
-  x: { domain: [new Date("2023-09-13"), new Date("2023-11-13")], grid: true},
-  y: { ticks: 3},
-  marginLeft: 50,
-  color: {
-    legend: true,
-    width: 300,
-    columns: "120px"
-}
+//  height: 130,
+//  x: { domain: [new Date("2023-09-13"), new Date("2023-11-13")], grid: true},
+//  y: { ticks: 3},
+//  marginLeft: 50,
+//  color: {
+//    legend: true,
+//    width: 300,
+//    columns: "120px"
+//}
 
 })
 ```
-Plot.plot({x: {domain: [new Date("2021-01-01"), new Date("2022-01-01")], grid: true}})
-{
-marks: [
-Plot.ruleY([-10,50])
-]
-}
+
 
 ## OJS Table
 
 ```{ojs}
 //| echo: false
 
+// Arquero is an ojs package for data manipulation similar to dplyr. I import it
+//  above as well in the `imports` chunk. I use arquero (`aq`) to convert the 
+//  data passed by `R` with `ojs_define()` from text back into a date objective.
+//  I've defined the date parser with `D3`, another `ojs` package. An example
+//  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
+//  Additionally, because R uses rectangular data but `ojs` uses array data I have
+//  to transpose the data to make it useful. If not you get the `e is not iterable` error.
+// 
+// So that my data reacts to the input values, I filter it by using anonymous functions
+//  This is often required in `ojs`. The `.params` argument allows you to pass
+//  external fields (my two user inputs) into the function as elements of a variable.
+//  
+// https://quarto.org/docs/interactive/ojs/examples/arquero.html
 measures_trans = aq.from(transpose(measures)).derive({ date: aq.escape(d => parser(d.date)) })
 
-//measures_trans = transpose(measures)
-
-//filteredData = measures_trans.filter(function(weatherdata) {
-
-//return time_aggregation.includes(weatherdata.aggregate_level) &&
-//measure_type.includes(weatherdata.type)
-
-//})
-
 filteredData = measures_trans
+  .params({
+   m: measure_type,
+   t: time_aggregation
+})
+  .filter((d,p) => op.includes(d.type, p.m) && op.includes(d.aggregate_level, p.t))
+
 
 ```
 
-This is the filtered data. You can also search for specific information
+
+Filtered Data Table  
 
 ```{ojs}
-viewof search = Inputs.search(filteredData)
-
-Inputs.table(search)
-```  
-
-Full Table  
-
-```{ojs}
-Inputs.table(measures_trans)
+Inputs.table(filteredData)
 ```
 
 :::
