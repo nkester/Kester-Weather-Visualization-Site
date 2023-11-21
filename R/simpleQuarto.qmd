@@ -12,7 +12,8 @@ format:
     code-summary: "Show the code"
     embed-resources: true
     echo: true
-    code-tools: true
+    code-tools: 
+      source: https://github.com/nkester/Kester-Weather-Visualization-Site
     page-layout: full
     output-file: "WeatherMeasurements"
     output-ext: "html"
@@ -111,6 +112,8 @@ Inputs.table(filteredData)
 
 
 ## Appendix
+
+Find the source code on GitHub at [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site)
 
 ```{r functions, include=TRUE}
 
@@ -292,3 +295,5 @@ filteredData = measures_trans
 
 
 ```
+
+[Personal Website](https://www.about.nkester.com)
