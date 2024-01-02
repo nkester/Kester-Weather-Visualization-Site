@@ -1,0 +1,51 @@
+---
+title: "test node"
+format: html
+---
+
+
+
+```{ojs}
+
+d3 = require('d3')
+
+
+```
+
+
+
+tempdat = await d3.json("https://bigquery.googleapis.com/bigquery/v2/projects/weather-station-ef6ca/datasets/weather_measures/tables/measures/data", { Header: "Authorization: Bearer ya29.a0AfB_byCvwKXGC-w4qgi4d7Jr1Fo4dMiPbnYQW9KLKNA3tUuMHVaPnwdZmmwXKGzneVx4_rqpF2Jx0hgWsnYXEOj_6C39xXhnEmuqxh6mBfSMWveMqtkeusYersM1qT0uviKxyAtKVp6GqN7scNcEytFUkVgU0z_fyvLBaCgYKAVISARMSFQHGX2MiJMWKrrxBi-A0B-w2XKqK4A0171"})
+
+Inputs.text(tempdat)
+
+```{ojs}
+foo = "test"
+foo
+```
+
+```{ojs}
+bar = foo + "bar"
+bar
+```
+
+```{ojs}
+baz = {
+  let foo = "something"; //Test comment
+  return foo + "baz"; // A reference to the local foo.
+}
+baz
+```
+
+
+tab = d3.json("https://api.github.com/repos/pandas-dev/pandas/stats/contributors")
+
+
+
+```{ojs}
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function")
+```
+
+```{ojs}
+Inputs.table(measures)
+```
+https://javascript.plainenglish.io/inserting-and-querying-data-in-google-big-query-with-javascript-517aa8d0dc52
