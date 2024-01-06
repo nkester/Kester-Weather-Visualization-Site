@@ -38,6 +38,8 @@ As an initial proof of concept, we decided to build a simple website locally usi
 
 ## Architecture
 
+![alt text](img/WeatherSiteArchitecture.png "Weather Site Architecture Diagram")  
+
 ## Getting Data
 
 ## Charting with Observable JS  
