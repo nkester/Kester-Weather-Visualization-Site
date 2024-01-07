@@ -82,17 +82,75 @@ This table looks like:
 8 avg   Wind Speed 
 ```
 
-Next I define the levels of aggregation I want to build data for. For now, those levels are: `As Measured`, `month`, `day`, and `hour`.  
+Next I define the levels of aggregation I want to build data for, defined as a character vector: `agg_levels`. For now, those levels are: `As Measured`, `month`, `day`, and `hour`.  
 
 Finally, we build a tibble with the proper column names and column data types for the `measure_tib` table. Later we will fill this table with data using the `measure_gather` function and then store that in an `RDS` file and pass the data to `{ojs}` for display and interactivity.  
 
-This completes the preparations for data collection. In the next step we will connect to the database and pull in data.  
+The `measure_tib` table structure looks like:
 
-The 
+```
+> dplyr::glimpse(measure_tib)
+Rows: 0
+Columns: 6
+$ aggregate_level <chr> 
+$ date            <dttm> 
+$ type            <chr> 
+$ measure         <dbl> 
+$ measure_min     <dbl> 
+$ measure_max     <dbl> 
+```
+
+This completes the preparations for data collection. In the next step we will connect to the database and pull in data.  
 
 ### Extracting, Transforming, and Loading Data  
 
+First, we connect to the database using `R`'s standard `DBI` database connection function with the `RPostgreSQL` connection driver and the connection information previously mentioned.  
 
+We then pass that connection object, `con` to the `measure_gather` function along with the `measure_spec`, `measure_tib`, and `agg_levels` previously described.
+
+The `measure_gather` function fills the empty `measure_tib` table iteratively for each measure in the `measure_spec` table and by each aggregation level in the `agg_levels` vector.  
+
+As it iterates through these options, it builds a specific PostgreSQL database query using the `agg_query` function which I'll describe shortly in the `agg_query` section below. It sends that query string to the database which returns a table with the structure described previously by the `measure_tib` table. It then binds that table's rows to those existing in the `measure_tib` table and continues the iteration until all are complete.  
+
+Finally, the function returns the `measure_tib` tibble and the script saves that response as an `RDS` file which takes less disk space than a flat file (e.g. csv) and retains the data types.  Below is a description of the `agg_query` function. 
+
+#### `agg_query`
+
+The `agg_query` function takes three arguments: `agg_function`, `type`, and `agg_level`.  
+
+Throughout this function we use `R`'s `sprintf()` function to pass character variables into a string using the `%s` key to build these queries. The variable value replaces these `%s` keys in the order they appear.
+
+When the aggregation level is `As Measured` the query is more basic and simply selects from the PostgreSQL `sensor_data` view the columns `time`, `type`, and `measurementValue`. We only select the rows in the view where the `type` is the same as the `type` requested in the `agg_query` function call. Likewise, because there is no aggregation, we record the `measurementValue` as the same for the `measure`, `measure_min`, and `measure_max` fields. A fully formed version of this query looks like:  
+
+```
+SELECT time AS date,
+       type, 
+       \"measurementValue\" AS measure, 
+       \"measurementValue\" AS measure_min,
+       \"measurementValue\" AS measure_max 
+FROM sensor_data 
+WHERE type = 'Air Temperature'
+```
+
+If the aggregation level is not `As Measured` we perform a multiple step query.  
+
+The first step is to truncate the date (`time` column in the PostgreSQL `sensor_data` view) according to the indicated aggregation level (`month`, `day`, `hour`) and return it as the `date` column along with the `type` and `measurementValue` columns.  
+
+From that table we group the rows by common `date` and `type` which will make groups by either hour, day, or month depending on the previous step. We will collapse all observations in those groups to a single line using a set of PostgreSQL aggregation functions. Common to all is taking the `min` and `max` measurement in the group. Then we use the specific PostgreSQL aggregation function provided as the `agg_function` function argument for the specific measure we're looking at. This is either `avg` for the average or `sum` for the sum.  
+
+> There is an error in this logic. Calling the `min` and `max` for measurements take every 15 minutes makes sense when the specific measurement aggregation function used is the average but this does not make sense when that function is the sum. These columns are meaningless in that case.
+
+Finally, from those groups we'll select the `date` and `type` column as is.
+
+The function then returns, as a string, the fully constructed PostgreSQL query.
+
+#### Loding the data  
+
+Regardless of seting the `update` variable to `TRUE` or `FALSE`, the script looks for the existance of the `weatherData.RDS` file which is the output of the previous script. If it exists, it loads it.  
+
+The script then checks if the object `measure_tib` exists in memory. This should be the case if a properly formed `weatherData.RDS` obejct is found. This check protects against failing due to an error in that file.  
+
+If the `measure_tib` exists, R passes that to Observable JS (`ojs`) as the object `measures` which we will interact with in the next section.
 
 ## Charting with Observable JS  
 
