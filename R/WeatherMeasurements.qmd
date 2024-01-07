@@ -29,13 +29,9 @@ We are trying to improve our charting work with Observable JS.
 knitr::opts_chunk$set(echo = TRUE)
 library(magrittr)
 
-# Select local when you want to read from a local .RDS file previously created 
-#  when updating from the local database. This will not change until we get the
-#  cloud database integration working.
-# Select update when you want to connect to the database and pull new data. This
+# Set update as TRUE when you want to connect to the database and pull new data. This
 #  can only happen when on the home network.
-local <- TRUE
-update <- FALSE
+update <- TRUE
 ```
 
 This page displays the measurements taken from our personal weather station. The raw measurements are taken every 15 minutes but we have aggregated the information when pulling it from our `PostgreSQL` database to every hour, day, and month.  
@@ -198,7 +194,7 @@ measure_gather <- function(con, measure_spec, measure_tib, agg_levels){
 ```  
 
 ```{r getData, include=TRUE,eval=TRUE}
-if(any(c(!local,update))){
+if(update){
   
   load(file = "./connectionInfo.RData")
   
@@ -248,7 +244,7 @@ if(any(c(!local,update))){
   rm(con,db,host,password,port,user)
 }
 
-if(all(local,file.exists("./weatherData.RDS"))){
+if(file.exists("./weatherData.RDS")){
   
   load(file = "./weatherData.RDS")
   
