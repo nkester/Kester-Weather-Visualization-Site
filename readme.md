@@ -38,9 +38,61 @@ As an initial proof of concept, we decided to build a simple website locally usi
 
 ## Architecture
 
+Due to the technical decisions described above, the following are the tools and their interactions we used to implement those decisions. Each tool serves a different purpose and each are described in the following steps.  
+
+All code is contained in the Quarto Markdown Document called [WeatherMeasurements.qmd](R/WeatherMeasurements.qmd). In the following sections of thie "readme" I'll refer to sections by their "Chunk Name" located at the top of each code chunk.
+
 ![alt text](img/WeatherSiteArchitecture.png "Weather Site Architecture Diagram")  
 
-## Getting Data
+Functions:  
+[Getting Data](#getting-data)  
+[Charting](#charting-with-observable-js)  
+[Publishing](#publishing-to-google-firebase)
+
+## Getting Data  
+
+In this initial architecture, all measurement data is stored in a PostgreSQL database on my local home network. For that reason, in order to get to the data I'll need to connect to the database and extract all required data while on my home network. I'll use `R` to perform these operations.  
+
+All code referenced in this section is contained in the code chunks: `{r functions}` and `{r getData}`. 
+
+The `{r functions}` chunk defines two functions used in this part of the process: `agg_query` and `measure_gather`.  I will describe these functions as they are implemented.  
+
+The `{r getData}` chunk is what is executed by `R` at "Render time." I'll walk through this check in order. First, a boolean variable called `update` is defined in chunk `{r setup}` at the top of the document. This determines if the script should get new data from the database or just perform the basic transformation functions of existing data in order to pass it on to the `{ojs}` chunks.  
+
+### Preparing to Get Data
+
+If `update` is defined as `TRUE`, we start by loading the connection information which is stored in an `.RData` file, not included in the source code. It simply defines the five variables required to connect to the database: `db` = the database name, `host` = the database IP address, `port` = the database port, `user` = the database user name, and `password` = the user's password.  
+
+Next, we define a tibble named `measure_spec` that lists the PostgreSQL function we want to use to aggregate each of the measures we collect. This is important because as we combine the measurements for `Air Temperature` over an hour, day, or month, it makes sense to take an average of the measurements rather than the sum. Conversley, when aggregating the measurements for `Rain Guage` it makes more sense to take the sum than the average. We will use this table later to build measurement specific queries in the `agg_query` function.  
+
+This table looks like:  
+
+```
+> measure_spec
+# A tibble: 8 × 2
+  fun   type                 
+  <chr> <chr>                
+1 avg   Air Humidity         
+2 avg   Air Temperature      
+3 avg   Barometric Pressure  
+4 avg   Light Intensity      
+5 sum   Rain Gauge           
+6 avg   UV Index             
+7 avg   Wind Direction Sensor
+8 avg   Wind Speed 
+```
+
+Next I define the levels of aggregation I want to build data for. For now, those levels are: `As Measured`, `month`, `day`, and `hour`.  
+
+Finally, we build a tibble with the proper column names and column data types for the `measure_tib` table. Later we will fill this table with data using the `measure_gather` function and then store that in an `RDS` file and pass the data to `{ojs}` for display and interactivity.  
+
+This completes the preparations for data collection. In the next step we will connect to the database and pull in data.  
+
+The 
+
+### Extracting, Transforming, and Loading Data  
+
+
 
 ## Charting with Observable JS  
 

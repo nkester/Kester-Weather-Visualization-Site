@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2024-01-06T08:29:53.738Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" etag="0fKy9QXyfQq9oWppF-IV" version="21.6.6" type="device">
+<mxfile host="app.diagrams.net" modified="2024-01-07T07:52:44.745Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" etag="BwV3p4ypugh9bHQNtdIi" version="21.6.6" type="device">
   <diagram id="i0oEYvOnRiqcVp2mykJb" name="Kester Weather Site">
     <mxGraphModel dx="1434" dy="746" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="850" math="0" shadow="0">
       <root>
@@ -194,7 +194,7 @@
         <mxCell id="ci4K4oEzOC30gkBtyNfN-27" value="&lt;span&gt;https://kesterweather.nkester.com&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=15;fontStyle=0" vertex="1" parent="1">
           <mxGeometry x="1613" y="480" width="265" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="_vZ3tyjFOiJT6bmv1r3o-1" value="Described in the Kester Weather Project&lt;br style=&quot;font-size: 13px;&quot;&gt;&quot;Project Config Code&quot; at:&amp;nbsp;https://www.about.nkester.com/project/weatherstation/" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=70;align=right;verticalAlign=top;fontStyle=1;fontColor=#FF0000;fontSize=13;" vertex="1" parent="1">
+        <mxCell id="_vZ3tyjFOiJT6bmv1r3o-1" value="Described in the Kester Weather Project&lt;br style=&quot;font-size: 13px;&quot;&gt;&quot;Project Config Code&quot; at:&amp;nbsp;https://www.about.nkester.com/project/weatherstation/&lt;br&gt;Tag: v-1.0" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=70;align=right;verticalAlign=top;fontStyle=1;fontColor=#FF0000;fontSize=13;" vertex="1" parent="1">
           <mxGeometry x="20" y="80" width="1120" height="680" as="geometry" />
         </mxCell>
       </root>
