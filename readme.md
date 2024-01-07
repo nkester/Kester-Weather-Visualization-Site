@@ -154,6 +154,30 @@ If the `measure_tib` exists, R passes that to Observable JS (`ojs`) as the objec
 
 ## Charting with Observable JS  
 
+To help charting and data manipulation in `ojs` we will use the `{arquero}` and `{d3}` packages. Arquero is an `{ojs}` package for data manipulation modeled after `R`'s `{dplyr}`. Also, in the conversion from `R` to `ojs`, the date-time field has reverted back to a text string so I'll use the `{d3}` package to build a parser to convert the text back into an appropriate date-time data type.  
+
+Finally, another data transformation task I have to deal with is the shape of the data. `R` handles data as rectangular while `ojs` handles it as a set of arrays. If I leave it as is, we will get an `e is not iterable` error. To overcome this we simple need to transpose the data sent from `R`.  
+
+> Many of the solutions I implement here were discovered from this Stack Overflow post [Passing Dates from R to OJS](https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto)  
+
+To start, we import all `ojs` depenedences and define the data-time parser in the `ojs imports` code chunk.  
+
+Next, in the `ojs filterData` code chunk, we use the `{arquero}` `from` method to transpose the `measures` dataset and then derive a new format for the `date` column using the `{d3}` parser defined in the `ojs imports` code chunk.  
+
+Finally, we create a new variable called `filteredData` based on input devices that allow the user to select the measure and time aggregation they want to see. The `.filter` method tells `ojs` to include data whose `type` column includes the user's selected `measure_type` (referred to as `m`) and whose `aggregate_level` column includes the user's selected `time_aggregation` (referred to as `t`).  
+
+> I found a great deal of help in developing this approach from the this guide in the [Quarto Example Page](https://quarto.org/docs/interactive/ojs/examples/arquero.html) 
+
+This filtered data is then used in the charts and tables displayed on the web page.  
+
+A few things to note about `ojs`. First, all data manipulation and data rendering (charts) happens within the user's browser. This means that each user has an independent session and no server is required to power these manipulations like in `R Shiny`. Second, `ojs` does not run in order like `R` or `Python`. For this reason, we can put all support, data transformation, etc. cells at the end of the notebook in a consolidated section. This is often called the "Appendix". 
+
+Now that we have our data and the hooks to filter our data based on user input, we move up to build those inputs in the `ojs inputs` code chunk. Here I was lazy and hard coded the list of options I wanted to user to be able to select. This will change in future iterations. We create an input element by declaring `viewof` the input variable name (what will refer to it by in code), and `Inputs.select`. We do this for the `time_aggregation` and `measure_type` variables we mentioned previously.  
+
+Next, Quarto provides this great option to create tabsets within the webpage which are titled by the octothorp headers (`##`). Every header between the three colons becomes a tab and all text and code between those headers go into that tab. So, we create one tab for plots and another for the raw data table.  
+
+With that, that is all we need to do to execute basic charting using `ojs`!
+
 ## Publishing to Google Firebase
 
 At `https://console.firebase.google.com`  
