@@ -1,0 +1,298 @@
+---
+title: "Kester Weather Station"
+author: "Grant and Neil Kester"
+date: "08 January 2024"
+theme: 
+  - flatly
+execute: 
+  echo: true
+format: 
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+    embed-resources: true
+    echo: true
+    code-tools: 
+      source: https://github.com/nkester/Kester-Weather-Visualization-Site
+    page-layout: full
+    output-file: "index"
+    output-ext: "html"
+---
+
+version: 1.0.0
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(magrittr)
+
+# Set update as TRUE when you want to connect to the database and pull new data. This
+#  can only happen when on the home network.
+update <- FALSE
+```
+
+This page displays the measurements taken from our personal weather station. The raw measurements are taken every 15 minutes but we have aggregated the information when pulling it from our `PostgreSQL` database to every hour, day, and month.  
+
+Much improvement is required to make meaningful conclusions from the data and for them to make sense in the context of what the measurements mean.
+
+Background information on our Weather Station project can be found at this github page: [Kester Weather Station](https://github.com/nkester/Kester-Weather-Station/blob/main/README.md)  
+
+Background information on this site and how we manage and display the data generated from the above project can be found at this site: [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site/blob/main/readme.md)
+
+# Charting  
+
+Select a time aggregation level and measure on the left to view the corresponding data in chart and table form on the right. The "As Measured" level does not provide any aggregation and shows every measurement taken at 15 minute intervals. 
+
+```{ojs inputs}
+//| echo: false
+//| panel: sidebar
+
+viewof time_aggregation = Inputs.select([
+"As Measured",
+"hour",
+"day",
+"month"],
+{label: "Time Aggregation"})
+
+viewof measure_type = Inputs.select([
+"Air Humidity",
+"Air Temperature",
+"Barometric Pressure",
+"Light Intensity",
+"Rain Gauge",
+"UV Index",
+"Wind Direction Sensor",
+"Wind Speed"], 
+{label: "Select a measure"})
+
+```
+
+:::{.panel-tabset}  
+
+## Plot
+
+```{ojs}
+Plot.dot(filteredData,
+  {
+    x: "date",
+    y: "measure", 
+    stroke: "measure",
+    tip: true
+  })
+  .plot()
+```
+
+
+The plot as a line graph.
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.line(filteredData, 
+      {
+        x: "date",
+        y: "measure"
+      })
+    ]
+})
+```
+
+
+## OJS Table
+
+Filtered Data Table  
+
+```{ojs}
+Inputs.table(filteredData)
+```
+
+:::
+
+
+
+## Appendix
+
+Find the source code on GitHub at [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site)
+
+```{r functions, include=TRUE}
+
+# This function builds the PostgreSQL query required to aggregate the timeseries
+#  data to a specified level.
+agg_query <- function(agg_function, type, agg_level){
+  
+  if(agg_level == 'As Measured'){
+
+    query <- sprintf("SELECT time AS date, 
+                             type, 
+                             \"measurementValue\" AS measure, 
+                             \"measurementValue\" AS measure_min,
+                             \"measurementValue\" AS measure_max 
+                      FROM sensor_data 
+                      WHERE type = '%s'",
+                      type)
+    
+  }else{
+    
+    query <- sprintf("SELECT date, 
+                             type, 
+                             %s(\"measurementValue\") AS measure,
+                             min(\"measurementValue\") AS measure_min,
+                             max(\"measurementValue\") AS measure_max 
+                      FROM (
+                      SELECT date_trunc('%s',time) AS date,
+                             type,
+                             \"measurementValue\" 
+                      FROM sensor_data
+                      WHERE type = '%s') AS A 
+                      GROUP BY date,
+                               type",
+            agg_function,
+            agg_level,
+            type)
+    
+  }
+
+  return(query)
+  
+}
+
+measure_gather <- function(con, measure_spec, measure_tib, agg_levels){
+  
+  for(measure in 1:nrow(measure_spec)){
+    
+    for(agg in agg_levels){
+      
+      if(agg == 'As Measured'){
+        
+        temp <- DBI::dbGetQuery(conn = con,
+                                statement = agg_query(agg_function = measure_spec[measure,1],
+                                                      type = measure_spec[measure,2],
+                                                      agg_level = agg))
+        
+        measure_tib <- dplyr::bind_rows(measure_tib,
+                                        tibble::tibble(aggregate_level = agg,
+                                                       temp))
+        
+      }else{
+        
+        temp <- DBI::dbGetQuery(conn = con,
+                                statement = agg_query(agg_function = measure_spec[measure,1],
+                                                      type = measure_spec[measure,2],
+                                                      agg_level = agg))
+        
+        measure_tib <- dplyr::bind_rows(measure_tib,
+                                        tibble::tibble(aggregate_level = agg,
+                                                       temp))
+        
+      }
+      
+    }
+    
+  }
+  
+  return(measure_tib)
+  
+}
+
+```  
+
+```{r getData, include=TRUE,eval=TRUE}
+if(update){
+  
+  load(file = "./connectionInfo.RData")
+  
+  measure_spec <- tibble::tibble(fun = c('avg',
+                                         'avg',
+                                         'avg',
+                                         'avg',
+                                         'sum',
+                                         'avg',
+                                         'avg',
+                                         'avg'),
+                                 type = c('Air Humidity',
+                                          'Air Temperature',
+                                          'Barometric Pressure',
+                                          'Light Intensity',
+                                          'Rain Gauge',
+                                          'UV Index',
+                                          'Wind Direction Sensor',
+                                          'Wind Speed'))
+  
+  agg_levels <- c('As Measured','month','day','hour')
+  
+  measure_tib <- tibble::tibble(aggregate_level = "NA",
+                                date = Sys.time(),
+                                type = "NA",
+                                measure = 1.1,
+                                measure_min = 1.1,
+                                measure_max = 1.1)[-1,]
+  
+  con <- DBI::dbConnect(drv = RPostgreSQL::PostgreSQL(),
+                        dbname = db,
+                        host = host,
+                        port = port,
+                        user = user,
+                        password = password)
+  
+  measure_tib <- measure_gather(con = con,
+                                measure_spec = measure_spec,
+                                measure_tib = measure_tib,
+                                agg_levels = agg_levels)
+  
+  DBI::dbDisconnect(conn = con)
+  
+  save(measure_tib,
+       file = "./weatherData.RDS")
+  
+  rm(con,db,host,password,port,user)
+}
+
+if(file.exists("./weatherData.RDS")){
+  
+  load(file = "./weatherData.RDS")
+  
+}
+
+if(exists(x = "measure_tib")){
+  
+  ojs_define(measures = measure_tib)
+  
+}
+
+```
+
+```{ojs imports}
+
+import { aq, op } from '@uwdata/arquero'
+d3 = require("d3@7")
+parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
+```
+
+```{ojs filterData}
+
+// Arquero is an ojs package for data manipulation similar to dplyr. I import it
+//  above as well in the `imports` chunk. I use arquero (`aq`) to convert the 
+//  data passed by `R` with `ojs_define()` from text back into a date objective.
+//  I've defined the date parser with `D3`, another `ojs` package. An example
+//  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
+//  Additionally, because R uses rectangular data but `ojs` uses array data I have
+//  to transpose the data to make it useful. If not you get the `e is not iterable` error.
+// 
+// So that my data reacts to the input values, I filter it by using anonymous functions
+//  This is often required in `ojs`. The `.params` argument allows you to pass
+//  external fields (my two user inputs) into the function as elements of a variable.
+//  
+// https://quarto.org/docs/interactive/ojs/examples/arquero.html
+measures_trans = aq.from(transpose(measures)).derive({ date: aq.escape(d => parser(d.date)) })
+
+filteredData = measures_trans
+  .params({
+    m: measure_type,
+    t: time_aggregation
+  })
+  .filter((d,p) => op.includes(d.type, p.m) && op.includes(d.aggregate_level, p.t))
+
+
+```
+
+[Personal Website](https://www.about.nkester.com)
