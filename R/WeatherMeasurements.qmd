@@ -1,7 +1,7 @@
 ---
 title: "Kester Weather Station"
 author: "Grant and Neil Kester"
-date: "21 November 2023"
+date: "08 January 2024"
 theme: 
   - flatly
 execute: 
@@ -19,11 +19,8 @@ format:
     output-ext: "html"
 ---
 
-version: 0.3.2
+version: 0.3.3
 
-We are trying to improve our charting work with Observable JS. 
-
-> **Update Note:** We have fixed the x-axis labels by properly converting to and dealing with date objects.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -31,14 +28,20 @@ library(magrittr)
 
 # Set update as TRUE when you want to connect to the database and pull new data. This
 #  can only happen when on the home network.
-update <- TRUE
+update <- FALSE
 ```
 
 This page displays the measurements taken from our personal weather station. The raw measurements are taken every 15 minutes but we have aggregated the information when pulling it from our `PostgreSQL` database to every hour, day, and month.  
 
 Much improvement is required to make meaningful conclusions from the data and for them to make sense in the context of what the measurements mean.
 
-# Charting
+Background information on our Weather Station project can be found at this github page: [Kester Weather Station](https://github.com/nkester/Kester-Weather-Station/blob/main/README.md)  
+
+Background information on this site and how we manage and display the data generated from the above project can be found at this site: [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site/blob/main/readme.md)
+
+# Charting  
+
+Select a time aggregation level and measure on the left to view the corresponding data in chart and table form on the right. The "As Measured" level does not provide any aggregation and shows every measurement taken at 15 minute intervals. 
 
 ```{ojs inputs}
 //| echo: false

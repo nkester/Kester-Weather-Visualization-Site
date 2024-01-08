@@ -180,25 +180,26 @@ With that, that is all we need to do to execute basic charting using `ojs`!
 
 ## Publishing to Google Firebase
 
-At `https://console.firebase.google.com`  
+Google Firebase is a simple and free website hosting solution. Access the Google Firebase Web Console at this [website](https://console.firebase.google.com).  
 
-Select "hosting"
+In order to keep all resources I plan to use in the future separate from others, I'll create a specific project for this called `Weather Station`. Once that is done, I'll select `Hosting` and it should provide instructions on what steps to take. Generally, you should install the `firebase` command line interface (CLI) tool. There are various ways to do this but the one I chose was by using `npm` like this: `sudo npm install -g firebase-tools`.  
 
-Install Firebase CLI with: `sudo npm install -g firebase-tools`  
-
-`firebase login --no-localhost`
+I authenticated into firebase with my google information using the following command: `firebase login --no-localhost`  
 
 Login and authenticate. The `--no-localhost` flag is needed when running from a container.
 
-`firebase init`  
+Next, after navigating to the project folder in my development environment, initiate `firebase` with: `firebase init`  
 
-Choose the option fo Firebase Hosting and select the project. Then provide the project directory the files are in. For me this was: `/config/workspace/kesterWeatherSite/site`. 
+Choose the option fo Firebase Hosting and select the project. Then provide the project directory the files are in. For me this was: `/config/workspace/kesterWeatherSite/site`.  Of note, I chose the `site` sub-directory so that I could place only my project artifacts (those files I want in my hosting environment) in that folder.  
 
-Once you've made the changes you want, enter the command `firebase deploy` to update the website.
+Once you've made the changes you want, enter the command `firebase deploy` to update the website.  
 
-## Plotting with observable
+That's it.
 
 ### Resources  
+
+A list of resources I found useful are below. Some are referenced in the text above but not all.  
+
   * https://observablehq.com/plot/features/plots  
   * https://d3js.org/  
   * Data manipulation with Arquero [Quarto](https://quarto.org/docs/interactive/ojs/examples/arquero.html) 
