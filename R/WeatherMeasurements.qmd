@@ -19,7 +19,7 @@ format:
     output-ext: "html"
 ---
 
-version: 0.3.3
+version: 1.0.0
 
 
 ```{r setup, include=FALSE}
