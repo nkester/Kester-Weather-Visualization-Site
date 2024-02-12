@@ -1,0 +1,124 @@
+---
+title: "Kester Weather Station"
+subtitle: "Pulling Live Data"
+author: "Grant and Neil Kester"
+date: "12 February 2024"
+theme: 
+  - flatly
+execute: 
+  echo: true
+format: 
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+    embed-resources: false
+    echo: true
+    code-tools: 
+      source: https://github.com/nkester/Kester-Weather-Visualization-Site
+    page-layout: full
+    output-file: "live"
+    output-ext: "html"
+---
+
+version: 0.1.0
+
+In this version of the web-page, we are pulling live data from our Google Cloud Functions.
+
+
+# Charting
+
+```{ojs inputs}
+//| echo: false
+//| panel: sidebar
+
+viewof time_aggregation = Inputs.select([
+"As Measured",
+"hour",
+"day",
+"month"],
+{label: "Time Aggregation"})
+
+viewof measure_type = Inputs.select([
+"Air Humidity",
+"Air Temperature",
+"Barometric Pressure",
+"Light Intensity",
+"Rain Gauge",
+"UV Index",
+"Wind Direction Sensor",
+"Wind Speed"], 
+{label: "Select a measure"})
+
+```
+
+:::{.panel-tabset}  
+
+## Plot
+
+```{ojs}
+Plot.dot(filteredData,
+  {
+    x: "local_time",
+    y: "measurementValue", 
+    stroke: "measurementValue",
+    tip: true
+  })
+  .plot()
+```
+
+
+The plot as a line graph.
+
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.line(filteredData, 
+      {
+        x: "local_time",
+        y: "measurementValue"
+      })
+    ]
+})
+```
+
+## OJS Table
+
+Filtered Data Table  
+
+```{ojs}
+Inputs.table(filteredData)
+```  
+
+:::
+
+
+
+## Appendix
+
+Find the source code on GitHub at [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site)
+
+
+```{ojs imports}
+
+import { aq, op } from '@uwdata/arquero'
+d3 = require("d3@7")
+parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
+```
+
+```{ojs filterData}
+
+// Arquero is an ojs package for data manipulation similar to dplyr. I import it
+//  above as well in the `imports` chunk. I use arquero (`aq`) to convert the 
+//  data returned by the cloud function from a string to a datetime object.
+//  I've defined the date parser with `D3`, another `ojs` package. An example
+//  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
+//  
+// https://quarto.org/docs/interactive/ojs/examples/arquero.html
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function")
+
+filteredData = aq.from(measures).derive({ local_time: aq.escape(d => parser(d.local_time)) })
+
+```
+
+[Personal Website](https://www.about.nkester.com)
