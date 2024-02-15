@@ -21,6 +21,14 @@ format:
 
 version: 1.0.0
 
+<<<<<<< HEAD
+=======
+**NOTE: The live version of this website is available [here](./live.html)**
+
+We are trying to improve our charting work with Observable JS. 
+
+> **Update Note:** We have fixed the x-axis labels by properly converting to and dealing with date objects.
+>>>>>>> feat: Link to the live data website from the index page. Clean out old basic cloud function integrations.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
