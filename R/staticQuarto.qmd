@@ -21,6 +21,8 @@ format:
 
 version: 0.3.2
 
+**NOTE: The live version of this website is available [here](./live.html)**
+
 We are trying to improve our charting work with Observable JS. 
 
 > **Update Note:** We have fixed the x-axis labels by properly converting to and dealing with date objects.

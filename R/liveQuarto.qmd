@@ -31,13 +31,6 @@ In this version of the web-page, we are pulling live data from our Google Cloud 
 //| echo: false
 //| panel: sidebar
 
-viewof time_aggregation = Inputs.select([
-"As Measured",
-"hour",
-"day",
-"month"],
-{label: "Time Aggregation"})
-
 viewof measure_type = Inputs.select([
 "Air Humidity",
 "Air Temperature",
@@ -115,9 +108,12 @@ parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
 //  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
 //  
 // https://quarto.org/docs/interactive/ojs/examples/arquero.html
-measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/flask_function")
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/measure_airtemp_7day_asis")
 
-filteredData = aq.from(measures).derive({ local_time: aq.escape(d => parser(d.local_time)) })
+filteredData = aq.from(measures).derive({ local_time: aq.escape(d => parser(d.local_time)) }).params({
+    m: measure_type
+  })
+  .filter((d,p) => op.includes(d.type, p.m))
 
 ```
 
