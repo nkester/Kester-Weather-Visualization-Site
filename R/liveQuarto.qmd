@@ -2,7 +2,7 @@
 title: "Kester Weather Station"
 subtitle: "Pulling Live Data"
 author: "Grant and Neil Kester"
-date: "12 February 2024"
+date: "20 February 2024"
 theme: 
   - flatly
 execute: 
@@ -20,12 +20,14 @@ format:
     output-ext: "html"
 ---
 
-version: 0.1.0
+version: 0.1.1 : Update the URL query point
 
 In this version of the web-page, we are pulling live data from our Google Cloud Functions.
 
 
 # Charting
+
+Currently this data is set to the last seven days of measurements. In the future, we will allow users to select which time scale and aggregation they desire.
 
 ```{ojs inputs}
 //| echo: false
@@ -108,7 +110,7 @@ parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
 //  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
 //  
 // https://quarto.org/docs/interactive/ojs/examples/arquero.html
-measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/measure_airtemp_7day_asis")
+measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_7day_asis")
 
 filteredData = aq.from(measures).derive({ local_time: aq.escape(d => parser(d.local_time)) }).params({
     m: measure_type
