@@ -20,7 +20,7 @@ format:
     output-ext: "html"
 ---
 
-version: 0.1.1 : Update the URL query point
+version: 0.1.2 : Add support for multiple endpoints.
 
 In this version of the web-page, we are pulling live data from our Google Cloud Functions.
 
@@ -33,9 +33,16 @@ Currently this data is set to the last seven days of measurements. In the future
 //| echo: false
 //| panel: sidebar
 
+viewof measure_scale = Inputs.select([
+"Select One",
+"Seven days, no aggregation",
+"Fourteen days, no aggregation"
+],
+{label: "Select a time scale"})
+
 viewof measure_type = Inputs.select([
-"Air Humidity",
 "Air Temperature",
+"Air Humidity",
 "Barometric Pressure",
 "Light Intensity",
 "Rain Gauge",
@@ -110,13 +117,30 @@ parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
 //  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
 //  
 // https://quarto.org/docs/interactive/ojs/examples/arquero.html
-measures = await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_7day_asis")
+ measures = {
+  if (measure_scale === "Seven days, no aggregation"){
+    return(await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_7day_asis"))
+  }
+  else if (measure_scale === "Fourteen days, no aggregation"){
+    return(await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_14day_asis"))
+  }
+  else{
+    return(JSON.parse('[{"local_time":"1000-02-02 11:11:11","type": "test","measurementValue":"49"}]'))
+  }
+}
+ 
 
-filteredData = aq.from(measures).derive({ local_time: aq.escape(d => parser(d.local_time)) }).params({
+filteredData = aq.from(measures)
+.derive({ local_time: aq.escape(d => parser(d.local_time)) })
+.params({
     m: measure_type
   })
-  .filter((d,p) => op.includes(d.type, p.m))
+  .filter((d,p) => aq.op.includes(d.type, p.m))
 
+```
+
+```{ojs}
+measures
 ```
 
 [Personal Website](https://www.about.nkester.com)
