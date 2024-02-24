@@ -21,6 +21,14 @@ format:
 
 version: 1.0.0
 
+<<<<<<< HEAD:R/WeatherMeasurements.qmd
+=======
+**NOTE: The live version of this website is available [here](./live.html)**
+
+We are trying to improve our charting work with Observable JS. 
+
+> **Update Note:** We have fixed the x-axis labels by properly converting to and dealing with date objects.
+>>>>>>> fa4877be7ff9945feb4d17bdbe7330ce6dbc86ff:R/staticQuarto.qmd
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
