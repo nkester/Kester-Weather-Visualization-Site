@@ -29,6 +29,8 @@ In this version of the web-page, we are pulling live data from our Google Cloud 
 
 Currently this data is set to the last seven days of measurements. In the future, we will allow users to select which time scale and aggregation they desire.
 
+
+
 ```{ojs inputs}
 //| echo: false
 //| panel: sidebar
@@ -52,6 +54,13 @@ viewof measure_type = Inputs.select([
 "Wind Speed"], 
 {label: "Select a measure"})
 
+viewof doit = Inputs.button("Fetch Data!")
+
+
+
+```
+```{ojs}
+{var paused = false};
 ```
 
 :::{.panel-tabset}  
@@ -61,7 +70,7 @@ viewof measure_type = Inputs.select([
 ```{ojs}
 Plot.dot(filteredData,
   {
-    x: "local_time",
+    x: "time",
     y: "measurementValue", 
     stroke: "measurementValue",
     tip: true
@@ -78,7 +87,7 @@ Plot.plot({
   marks: [
     Plot.line(filteredData, 
       {
-        x: "local_time",
+        x: "time",
         y: "measurementValue"
       })
     ]
@@ -93,6 +102,45 @@ Filtered Data Table
 Inputs.table(filteredData)
 ```  
 
+Combined Data
+
+```{ojs}
+Inputs.table(filteredData2)
+```
+
+## New Chart
+```{ojs}
+viewof replay = Inputs.button("Replay")
+```
+
+Aggregated First with `As Measured`  
+
+```{ojs}
+chart = {
+  replay;
+  return drawchart(filteredData2, filteredData);
+
+}
+```  
+
+Then only `As Measured` by itself
+
+```{ojs}
+chart2 = {
+  replay;
+  return drawchart(filteredData);
+
+}
+```
+
+```{ojs}
+Plot.line(filteredData2, {x: "time",y:"measurementValue",marker:false,curve:"natural"}).plot({grid:true})
+```
+
+```{ojs}
+length = (path) => d3.create("svg:path").attr("d", path).node().getTotalLength()
+```
+
 :::
 
 
@@ -106,7 +154,7 @@ Find the source code on GitHub at [Kester Weather Visualization Site](https://gi
 
 import { aq, op } from '@uwdata/arquero'
 d3 = require("d3@7")
-parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
+parser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
 ```
 
 ```{ojs filterData}
@@ -134,12 +182,22 @@ parser = d3.timeParse("%Y-%m-%d %H:%M:%S");
 }
  
 
+filteredData2 = aq.from(measures)
+      .derive({ time: aq.escape(d => parser(d.local_time)) })
+      .params({
+        m: measure_type
+      })
+      .filter((d,p) => aq.op.includes(d.type, p.m))
+      .orderby( 'time')
+      .derive({ 'measurementValue': aq.rolling(d => op.sum(d.measurementValue), [-96, 0]) })
+      
 filteredData = aq.from(measures)
-.derive({ local_time: aq.escape(d => parser(d.local_time)) })
-.params({
-    m: measure_type
-  })
-  .filter((d,p) => aq.op.includes(d.type, p.m))
+      .derive({ time: aq.escape(d => parser(d.local_time)) })
+      .params({
+        m: measure_type
+      })
+      .filter((d,p) => aq.op.includes(d.type, p.m))
+      .orderby( 'time')
 
 ```
 
@@ -147,4 +205,119 @@ filteredData = aq.from(measures)
 measures
 ```
 
+```{ojs}
+doit
+```  
+
+Filtered Data 
+```{ojs}
+filteredData
+```
+
+Filtered Data 2
+```{ojs}
+filteredData2
+```
+
+```{ojs}
+
+function drawchart(dat, dat2){
+
+  const width = 928;
+  const height = 720;
+  const marginTop = 20;
+  const marginRight = 30;
+  const marginBottom = 30;
+  const marginLeft = 40;
+  
+  // Declare the positional encodings.
+  const x = d3.scaleTime()
+      .domain(d3.extent(dat, d => d.time))
+      .range([marginLeft, width - marginRight]);
+      
+  const y = d3.scaleLinear()
+      .domain(d3.extent(dat, d => d.measurementValue)).nice()
+      .range([height - marginBottom, marginTop]);
+      
+  const line = d3.line()
+      .curve(d3.curveCatmullRom)
+      .x(d => x(d.time))
+      .y(d => y(d.measurementValue));
+      
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [0, 0, width, height])
+      .attr("style", "max-width: 100%; height: auto;");
+      
+  const l = length(line(dat));
+  
+  svg.append("g")
+      .attr("transform", `translate(0,${height - marginBottom})`)
+      .call(d3.axisBottom(x).ticks(d3.timeDay))
+      .call(g => g.select(".domain").remove())
+      .call(g => g.selectAll(".tick line").clone()
+          .attr("y2", -height)
+          .attr("stroke-opacity", 0.1))
+      .call(g => g.append("text")
+          .attr("x", width - 4)
+          .attr("y", -4)
+          .attr("font-weight", "bold")
+          .attr("text-anchor", "end")
+          .attr("fill", "currentColor")
+          .text("Date"));
+          
+  svg.append("g")
+      .attr("transform", `translate(${marginLeft},0)`)
+      .call(d3.axisLeft(y).ticks(null, ".2f"))
+      .call(g => g.select(".domain").remove())
+      .call(g => g.selectAll(".tick line").clone()
+          .attr("x2", -width)
+          .attr("stroke-opacity", 0.1))
+      .call(g => g.append("text")
+          .attr("x", 10)
+          .attr("y", height - 4)
+          .attr("text-anchor", "start")
+          .attr("font-weight", "bold")
+          .text("Measure"));
+          
+  svg.append("path")
+      .datum(dat)
+      .attr("fill", "none")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 2.5)
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round")
+      .attr("stroke-dasharray", `0,${l}`)
+      .attr("d", line)
+    .transition()
+      .duration(5000)
+      .ease(d3.easeLinear)
+      .attr("stroke-dasharray", `${l},${l}`);
+      
+      if (typeof dat2 !== 'undefined'){
+      
+         svg.append("path")
+           .datum(dat2)
+           .attr("fill", "none")
+           .attr("stroke", "red")
+           .attr("stroke-width", 2.5)
+           .attr("stroke-linejoin", "round")
+           .attr("stroke-linecap", "round")
+           .attr("stroke-dasharray", `0,${l}`)
+           .attr("d", line)
+         .transition()
+           .duration(5000)
+           .ease(d3.easeLinear)
+           .attr("stroke-dasharray", `${l},${l}`);
+      };
+
+  return svg.node();
+
+}
+
+```
+
+
 [Personal Website](https://www.about.nkester.com)
+
