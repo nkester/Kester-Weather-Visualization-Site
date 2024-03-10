@@ -43,6 +43,7 @@ viewof measure_scale = Inputs.select([
 ],
 {label: "Select a time scale"})
 
+
 viewof measure_type = Inputs.select([
 "Air Temperature",
 "Air Humidity",
@@ -50,22 +51,102 @@ viewof measure_type = Inputs.select([
 "Light Intensity",
 "Rain Gauge",
 "UV Index",
-"Wind Direction Sensor",
-"Wind Speed"], 
+"Wind"], 
 {label: "Select a measure"})
 
-viewof doit = Inputs.button("Fetch Data!")
+viewof original_data = Inputs.checkbox(["Yes"],{label: "Include original data in chart?"})
 
-
-
+// https://observablehq.com/@mbostock/wait-until-button
+viewof action_sendquery = html`<form>${Object.assign(html`<button type=button>Draw Charts`, {onclick: event => event.currentTarget.dispatchEvent(new CustomEvent("input", {bubbles: true}))})}`
 ```
-```{ojs}
-{var paused = false};
-```
+
+
+
 
 :::{.panel-tabset}  
 
 ## Plot
+
+```{ojs}
+
+
+chart = {
+  replay;
+  const nonlinegraph_measures = ["Wind"]
+  if(!nonlinegraph_measures.includes(measure_type))
+  {
+    if(original_data.includes("Yes")){
+    
+      return drawchart(aggregatedData, filteredData)
+      
+    }else{
+    
+      return drawchart(aggregatedData)
+      
+    }
+  }else{
+  
+    return vector(filteredData)
+    
+  };
+
+}
+
+
+```  
+
+```{ojs}
+viewof replay = Inputs.button("Replay")
+```
+
+
+
+## OJS Table
+
+Filtered Data Table  
+
+```{ojs}
+Inputs.table(filteredData)
+```  
+
+Combined Data
+
+```{ojs}
+Inputs.table(aggregatedData)
+```
+
+## New Chart
+
+
+Aggregated First with `As Measured`  
+
+```{ojs}
+chart_old = {
+  replay;
+  return drawchart(aggregatedData, filteredData);
+
+}
+```  
+
+Then only `As Measured` by itself
+
+```{ojs}
+chart2 = {
+  replay;
+  return drawchart(filteredData);
+
+}
+```
+
+```{ojs}
+Plot.line(aggregatedData, {x: "time",y:"measurementValue",marker:false,curve:"natural"}).plot({grid:true})
+```
+
+```{ojs}
+length = (path) => d3.create("svg:path").attr("d", path).node().getTotalLength()
+```
+
+Original Plots
 
 ```{ojs}
 Plot.dot(filteredData,
@@ -94,53 +175,6 @@ Plot.plot({
 })
 ```
 
-## OJS Table
-
-Filtered Data Table  
-
-```{ojs}
-Inputs.table(filteredData)
-```  
-
-Combined Data
-
-```{ojs}
-Inputs.table(filteredData2)
-```
-
-## New Chart
-```{ojs}
-viewof replay = Inputs.button("Replay")
-```
-
-Aggregated First with `As Measured`  
-
-```{ojs}
-chart = {
-  replay;
-  return drawchart(filteredData2, filteredData);
-
-}
-```  
-
-Then only `As Measured` by itself
-
-```{ojs}
-chart2 = {
-  replay;
-  return drawchart(filteredData);
-
-}
-```
-
-```{ojs}
-Plot.line(filteredData2, {x: "time",y:"measurementValue",marker:false,curve:"natural"}).plot({grid:true})
-```
-
-```{ojs}
-length = (path) => d3.create("svg:path").attr("d", path).node().getTotalLength()
-```
-
 :::
 
 
@@ -167,6 +201,7 @@ parser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
 //  
 // https://quarto.org/docs/interactive/ojs/examples/arquero.html
  measures = {
+ action_sendquery;
   if (measure_scale === "Seven days, no aggregation"){
     return(await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_7day_asis"))
   }
@@ -181,46 +216,41 @@ parser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
   }
 }
  
-
-filteredData2 = aq.from(measures)
+// Take the full dataset and filter out to only the measures the user selects.
+filteredData = {
+  if(measure_type === "Wind"){
+    return aq.from(measures)
       .derive({ time: aq.escape(d => parser(d.local_time)) })
       .params({
-        m: measure_type
+        m: "Wind Direction Sensor",
+        n: "Wind Speed"
       })
-      .filter((d,p) => aq.op.includes(d.type, p.m))
+      .filter((d,p) => aq.op.includes(d.type, p.m) || aq.op.includes(d.type, p.n))
       .orderby( 'time')
-      .derive({ 'measurementValue': aq.rolling(d => op.sum(d.measurementValue), [-96, 0]) })
       
-filteredData = aq.from(measures)
-      .derive({ time: aq.escape(d => parser(d.local_time)) })
-      .params({
-        m: measure_type
-      })
-      .filter((d,p) => aq.op.includes(d.type, p.m))
-      .orderby( 'time')
+  }else{
+    return aq.from(measures)
+        .derive({ time: aq.escape(d => parser(d.local_time)) })
+        .params({
+          m: measure_type
+        })
+        .filter((d,p) => aq.op.includes(d.type, p.m))
+        .orderby( 'time')
+        
+        
+  }
+}
+// If the user wants an aggregation, complete that aggregation on the filtered data.
+aggregatedData = filteredData
+  .derive({ 'measurementValue': aq.rolling(d => aq.op.sum(d.measurementValue), [-96, 0]) })
 
 ```
 
-```{ojs}
-measures
-```
+### Functions
 
 ```{ojs}
-doit
-```  
-
-Filtered Data 
-```{ojs}
-filteredData
-```
-
-Filtered Data 2
-```{ojs}
-filteredData2
-```
-
-```{ojs}
-
+// https://observablehq.com/@d3/connected-scatterplot/2?intent=fork
+//| echo: false
 function drawchart(dat, dat2){
 
   const width = 928;
@@ -318,6 +348,294 @@ function drawchart(dat, dat2){
 
 ```
 
+```{ojs}
+// https://observablehq.com/@d3/radial-stacked-bar-chart/2
+// https://observablehq.com/@d3/radial-area-chart/2
+
+function vector(dat){
+
+  const direction = dat
+                   .filter(d => aq.op.includes(d.type, "Wind Direction Sensor"))
+                   .orderby( 'time')
+
+  const speed = dat
+                     .filter(d => aq.op.includes(d.type, "Wind Speed"))
+                     .orderby( 'time')
+  
+
+  
+  const width = 928;
+  const height = width;
+  const margin = 10;
+  const innerRadius = width / 5;
+  const outerRadius = width / 2 - margin;
+  
+  const x = d3.scaleUtc()
+    .domain([d3.min(dat, d => d.time),d3.max(dat, d => d.time)])
+    .range([0, 2 * Math.PI]);
+    
+  const y = d3.scaleRadial()
+    .domain([d3.min(speed, d => d.measurementValue), d3.max(speed, d => d.measurementValue)])
+    .range([innerRadius, outerRadius]);
+    
+  const line = d3.lineRadial()
+    .curve(d3.curveLinearClosed)
+    .angle(d => x(d.time));
+    
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height])
+      .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round");
+      
+  svg.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", line
+          .radius(d => y(d.measurementValue))
+          (speed));
+          
+  svg.append("g")
+    .selectAll()
+    .data(x.ticks())
+    .join("g")
+      .each((d, i) => d.id = DOM.uid("month"))
+      .call(g => g.append("path")
+        .attr("strok", "#000")
+        .attr("stroke-opacity", 0.2)
+        .attr("d", d => `
+          M${d3.pointRadial(x(d), innerRadius)}
+          L${d3.pointRadial(x(d), outerRadius)}
+          `))
+      .call(g => g.append("path")
+          .attr("id", d => d.id.id)
+          .datum(d => [d, d3.utcMonth.offset(d, 1)])
+          .attr("fill", "none")
+          .attr("d", ([a, b]) => `
+            M${d3.pointRadial(x(a), innerRadius)}
+            A${innerRadius},${innerRadius} 0,0,1 ${d3.pointRadial(x(b), innerRadius)}
+            `))
+        .call(g => g.append("text")
+          .append("textPath")
+            .attr("startOffset", 6)
+            .attr("xlink:href", d => d.id.href)
+            .text(d3.utcFormat("%Y")));
+            
+  svg.append("g")
+      .attr("text-anchor", "middle")
+    .selectAll()
+    .data(y.ticks().reverse())
+    .join("g")
+      .call(g => g.append("circle")
+        .attr("fill", "none")
+        .attr("stroke", "currentColor")
+        .attr("stroke-opacity", 0.2)
+        .attr("r", y))
+      .call(g => g.append("text")
+        .attr("y", d => -y(d))
+        .attr("dy", "0.35em")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 5)
+        .attr("fill", "currentColor")
+        .attr("paint-order", "stroke")
+        .text((x, i) => `${x.toFixed(0)}${i ? "" : "km/hr"}`)
+      .clone(true)
+        .attr("y", d => y(d)));
+          
+
+  return svg.node();
+
+}
+```
+Reference for a vector graph for wind speed and direction
+https://observablehq.com/@d3/vector-field
 
 [Personal Website](https://www.about.nkester.com)
 
+
+
+
+
+```{ojs}
+// https://observablehq.com/@uwdata/an-illustrated-guide-to-arquero-verbs#filter
+// this should move up to the previous block but will stay here until the chart
+//  is figured out.
+// https://observablehq.com/@uwdata/introducing-arquero
+wind = {
+
+const windtable = aq.from(filteredData)
+                      .groupby('time')
+                      .pivot('type','measurementValue')
+                      .rename({ 'Wind Direction Sensor': 'direction', 'Wind Speed': 'speed'})
+                      .join_full(aq.table({
+                                     direction: Array(361)
+                                       .fill()
+                                       .map((element, index) => index),
+                                     speed: Array(361)
+                                       .fill(0)}))
+                      .groupby('direction')
+                      .rollup({
+                          avg: d => aq.op.average(d.speed), 
+                          min: d => aq.op.min(d.speed), 
+                          max: d => aq.op.max(d.speed)})
+                      .orderby('direction')
+
+return windtable
+
+}
+```
+
+```{ojs}
+Inputs.table(wind)
+```
+
+```{ojs}
+function vector_test(dat){
+  const width = 928;
+  const height = width;
+  const margin = 10;
+  const innerRadius = width / 10;
+  const outerRadius = width / 2 - margin;
+  
+  const x = d3.scaleLinear()
+    .domain([d3.min(dat, d => d.direction),d3.max(dat, d => d.direction)])
+    .range([0, 2 * Math.PI]); //[d3.min(dat, d => d.direction),d3.max(dat, d => d.direction)]);
+    
+  const y = d3.scaleRadial()
+    .domain([d3.min(dat, d => d.min), d3.max(dat, d => d.max)])
+    .range([innerRadius, outerRadius]);
+    
+  const line = d3.lineRadial()
+    .curve(d3.curveLinearClosed)
+    .angle(d => x(d.direction));
+    
+  const area = d3.areaRadial()
+    .curve(d3.curveLinearClosed)
+    .angle(d => x(d.direction));
+    
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height])
+      .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round");
+      
+  svg.append("path")
+      .attr("fill", "lightsteelblue")
+      .attr("fill-opacity", 0.2)
+      .attr("d", area
+            .innerRadius(d => y(d.min))
+            .outerRadius(d => y(d.max))
+            (dat));
+      
+  svg.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", line
+          .radius(d => y(d.avg))
+          (dat));
+          
+  svg.append("g")
+      .selectAll()
+      .data(x.ticks())
+      .join("g")
+        .each((d, i) => d.id = DOM.uid("degree"))
+        .call(g => g.append("path")
+            .attr("stroke", "#000")
+            .attr("stroke-opacity", 0.2)
+            .attr("d", d => `
+              M${d3.pointRadial(x(d), innerRadius)}
+              L${d3.pointRadial(x(d), outerRadius)}
+              `))
+        
+  svg.append("g")
+      .attr("text-anchor", "middle")
+    .selectAll()
+    .data(y.ticks().reverse())
+    .join("g")
+      .call(g => g.append("circle")
+          .attr("fill", "none")
+          .attr("stroke", "currentColor")
+          .attr("stroke-opacity", 0.2)
+          .attr("r", y))
+      .call(g => g.append("text")
+          .attr("y", d => -y(d))
+          .attr("dy", "0.35em")
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 5)
+         .attr("fill", "currentColor")
+          .attr("paint-order", "stroke")
+          .text((x, i) => `${x.toFixed(0)}${i ? "": " mph"}`)
+      .clone(true)
+        .attr("y", d => y(d)));
+  
+ return svg.node();
+}
+          
+```  
+
+```{ojs}
+vector_test(wind)
+```  
+
+
+```{ojs}
+function linearGraph(dat){
+const width = 928;
+  const height = width;
+  const margin = 10;
+  const innerRadius = width / 10;
+  const outerRadius = width / 2 - margin;
+  
+  const x = d3.scaleLinear()
+    .domain([d3.min(dat, d => d.direction),d3.max(dat, d => d.direction)])
+    .range([margin, width - margin]); //[d3.min(dat, d => d.direction),d3.max(dat, d => d.direction)]);
+    
+  const y = d3.scaleLinear()
+    .domain([d3.min(dat, d => d.min), d3.max(dat, d => d.max)])
+    .range([height - margin, margin]);
+    
+  const line = d3.line()
+    .x(d => x(d.direction))
+    .y(d => y(d.avg))
+    .curve(d3.curveNatural);
+    
+    
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height])
+      .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round");
+
+      
+  svg.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", line(dat));
+      
+  svg.append("g")
+      .attr("transform", `translate(0,${height - margin})`)
+      .call(d3.axisBottom(x))
+      .call(g => g.append("text")
+          .attr("x", width - 4)
+          .attr("y", -4)
+          .attr("font-weight", "bold")
+          .attr("text-anchor", "end")
+          .attr("fill", "currentColor")
+          .text("Date"));
+  
+ return svg.node();
+}
+```  
+
+```{ojs}
+linearGraph(wind)
+```

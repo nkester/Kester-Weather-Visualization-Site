@@ -203,6 +203,8 @@ A list of resources I found useful are below. Some are referenced in the text ab
   * https://observablehq.com/plot/features/plots  
   * https://d3js.org/  
   * Data manipulation with Arquero [Quarto](https://quarto.org/docs/interactive/ojs/examples/arquero.html) 
+  * [Quarto Layout Specifications](https://quarto.org/docs/authoring/article-layout.html#available-columns)  
+  * [25 Days of D3](https://observablehq.com/@thetylerwolf/25-days-of-d3)
   
   
 How to conditionally show marks in a chart. I want to use this to turn on or off certain measures that make sense to be plotted together.  
