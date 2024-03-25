@@ -20,7 +20,8 @@ format:
     output-ext: "html"
 ---
 
-version: 2.0.0: New Charts that actively pull data from the project's Google Cloud Functions.
+version: 2.0.0: New Charts that actively pull data from the project's Google Cloud Functions.  
+version: 1.0.0: See the original version here in [GitHub](https://github.com/nkester/Kester-Weather-Visualization-Site/tree/v-1.1.0) and the [website](./version1.html)
 
 # Introduction  
 
@@ -28,7 +29,7 @@ This page is the result of a project my son and I started in the summer of 2023 
 
 # Background  
 
-The sensor producing this data is located in the Veneto Region of Northern Italy. It takes measurements every 15 minutes, stores the data in our Raspberry Pi 4 which pushes it to the Google Cloud Platform project we developed for this. The charts are rudimentary now but will develop as we learn more JavaScript. If available, works in progress will be linked from this [Works in Progress](./wip.html) page. 
+The sensor producing this data is located in the Veneto Region of Northern Italy. It takes measurements every 15 minutes, stores the data in our Raspberry Pi 4 which pushes it to the Google Cloud Platform project we developed for this. The charts are rudimentary now but will develop as we learn more JavaScript.  
 
 # Using the Website  
 
