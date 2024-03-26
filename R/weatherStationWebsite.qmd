@@ -1,0 +1,555 @@
+---
+title: "Kester Weather Station"
+subtitle: "Pulling Live Data"
+author: "Grant and Neil Kester"
+date: "23 March 2024"
+theme: 
+  - flatly
+execute: 
+  echo: true
+format: 
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+    embed-resources: false
+    echo: true
+    code-tools: 
+      source: https://github.com/nkester/Kester-Weather-Visualization-Site
+    page-layout: full
+    output-file: "index"
+    output-ext: "html"
+---
+
+version: 2.0.0: New Charts that actively pull data from the project's Google Cloud Functions.  
+version: 1.0.0: See the original version here in [GitHub](https://github.com/nkester/Kester-Weather-Visualization-Site/tree/v-1.1.0) and the [website](./version1.html)
+
+# Introduction  
+
+This page is the result of a project my son and I started in the summer of 2023 to collect and display measurements from the environment near our home. We broke this project into two components which are both accessible at their public GitHub locations. They are: 1) Setting up, configuring, storing, and making accessible data from the [Kester Weather Station](https://github.com/nkester/Kester-Weather-Station/blob/main/README.md) and 2) Displaying the data through the [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site/blob/main/readme.md).  
+
+# Background  
+
+The sensor producing this data is located in the Veneto Region of Northern Italy. It takes measurements every 15 minutes, stores the data in our Raspberry Pi 4 which pushes it to the Google Cloud Platform project we developed for this. The charts are rudimentary now but will develop as we learn more JavaScript.  
+
+# Using the Website  
+
+Think about these steps when using this website:  
+
+  * Step 1) Select the amount of data to see. All options start with the latest observation and go back in time.
+  * Step 2) Click the button "Get Data!" It will take a second to return the data so continue to the next step.  
+    * To limit cost, the data service in Google Cloud Platform waits for a request to start running rather than run all the time.  
+  * Step 3) Select the measure you want to see.  
+  * Step 4) Select the level of aggregation you want. Depending on the measure, this either gives you the rolling sum for that time period (e.g. Rain Depth) or the average measure for that time period (e.g. Air Temperature).  
+  * Step 5) Checking the "Fancy Chart" option shows my initial attempts to use JavaScript to animate the line draw. Otherwise we use Observable Plot to draw the charts.  
+    
+> You can see the charted data in table form in the "Table" tab.
+
+
+```{ojs inputs}
+//| echo: false
+//| panel: sidebar
+
+viewof measure_scale = Inputs.select([
+"Select One",
+"Seven days",
+"Fourteen days",
+"Sixty days"
+],
+{label: "Select a time scale"});
+
+// https://observablehq.com/@mbostock/wait-until-button
+viewof action_sendquery = html`<form>${Object.assign(html`<button type=button>Get Data!`, {onclick: event => event.currentTarget.dispatchEvent(new CustomEvent("input", {bubbles: true}))})}`
+
+viewof measure_type = Inputs.select([
+"Air Temperature",
+"Air Humidity",
+"Barometric Pressure",
+"Light Intensity",
+"Rain Intensity",
+"Rain Depth",
+"UV Index",
+"Wind"], 
+{label: "Select a measure"});
+
+viewof measure_aggregation = Inputs.select([
+  "None",
+  "12 Hours",
+  "1 Day"
+],
+{label: "Select the level of aggregation:"});
+
+viewof fancy = Inputs.checkbox(["Yes"],{label: "Try the fancy chart?"})
+
+//viewof original_data = Inputs.checkbox(["Yes"],{label: "Include original data in chart?"})
+
+
+```
+
+
+
+
+:::{.panel-tabset}  
+
+## Plot
+
+```{ojs}
+// Decide which chart to draw based on input. There are two graph types, a standard simple continuous line plot and a polar plot of wind speed and direction. Also provide an option to try the fancy D3 plot
+chart = {
+  replay;
+
+  if(measure_type == "Wind"){
+
+    return wind_graph(plotData)
+    
+  } else {
+
+    if(fancy.includes("Yes")){
+      
+      return drawchart(plotData)
+      
+    }else{
+      
+      return simple_graph(plotData, measure_type, measure_unit)
+      
+    }
+    
+  }
+
+}
+
+
+```  
+
+```{ojs}
+viewof replay = Inputs.button("Replay")
+```
+
+
+
+## Table
+
+Data Table of plotted data: 
+
+```{ojs}
+Inputs.table(plotData)
+```  
+
+All data returned by the cloud service:
+
+```{ojs}
+Inputs.table(measures)
+```
+
+:::
+
+## Appendix
+
+[Personal Website](https://www.about.nkester.com)
+
+Find the source code on GitHub at [Kester Weather Visualization Site](https://github.com/nkester/Kester-Weather-Visualization-Site)
+
+Reference for a vector graph for wind speed and direction
+https://observablehq.com/@d3/vector-field
+
+```{ojs imports}
+
+import { aq, op } from '@uwdata/arquero'
+d3 = require("d3@7")
+parser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
+```
+
+```{ojs}
+// Return the graphed measure's unit based on the user's selection 
+measure_unit = {
+
+  if(measure_type === "Rain Depth"){
+    return "mm"
+  }else if(measure_type === "Air Temperature"){
+    return "C"
+  }else if(measure_type === "Air Humidity"){
+    return "%RH"
+  }else if(measure_type === "Barometric Pressure"){
+    return "Pa"
+  }else if(measure_type === "Light Intensity"){
+    return "Lux"
+  }else if(measure_type === "Rain Intensity"){
+    return "mm/hr"
+  }else if(measure_type === "UV Index"){
+    return "Unitless"
+  }else if(measure_type === "Wind"){
+    return "m/s"
+  }else{
+    return "Unknown"
+  }
+}
+```
+
+```{ojs measures}
+// Arquero is an ojs package for data manipulation similar to dplyr. I import it
+//  above as well in the `imports` chunk. I use arquero (`aq`) to convert the 
+//  data returned by the cloud function from a string to a datetime object.
+//  I've defined the date parser with `D3`, another `ojs` package. An example
+//  of that is here: https://stackoverflow.com/questions/76499928/passing-dates-from-r-chunk-to-ojs-chunk-using-ojs-define-in-quarto  
+//  
+// https://quarto.org/docs/interactive/ojs/examples/arquero.html
+ measures = {
+ action_sendquery;
+  if (measure_scale === "Seven days"){
+    return(await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_7day_asis"))
+  }
+  else if (measure_scale === "Fourteen days"){
+    return(await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_14day_asis"))
+  }
+  else if (measure_scale === "Sixty days"){
+    return(await d3.json("https://us-east1-weather-station-ef6ca.cloudfunctions.net/https_measure_60day_asis"))
+  }
+  else{
+    return(JSON.parse('[{"local_time":"1000-02-02 11:11:11","type": "test","measurementValue":"49"}]'))
+  }
+};
+```
+
+
+```{ojs filterData}
+// Take the full dataset and filter out to only the measures the user selects.
+// https://observablehq.com/@uwdata/an-illustrated-guide-to-arquero-verbs#filter
+// this should move up to the previous block but will stay here until the chart
+//  is figured out.
+// https://observablehq.com/@uwdata/introducing-arquero
+filteredData = {
+  if(measure_type === "Wind"){
+    
+    return filter_wind(measures);
+      
+  }else if(measure_type === "Rain Depth"){
+
+    return filter_calculate_raindepth(measures)
+    
+  }else if(measure_type === "Rain Intensity"){
+    
+    return filter_general(measures, "Rain Gauge")
+    
+  }else{
+    
+    return filter_general(measures, measure_type)       
+        
+  }
+}
+
+```  
+
+```{ojs plotData}
+plotData = {
+  if(measure_aggregation === "None"){
+    
+    return filteredData
+    
+  }else if(measure_aggregation === "1 Day"){
+    
+    return aggregate_data(filteredData,measure_type,1)
+    
+  }else if(measure_aggregation === "12 Hours"){
+    
+    return aggregate_data(filteredData,measure_type,0.5)
+    
+  }
+}
+```
+
+### Functions
+
+```{ojs aggregate_data}
+
+// If the user wants an aggregation of a measure where summation is appropriate (rain depth), complete that aggregation on the filtered data.
+function aggregate_data(dat,measure,days){ 
+  {
+    if(measure === 'Rain Depth'){
+      return dat
+             .derive({ 'measurementValue': aq.rolling(d => aq.op.sum(d.measurementValue), [-24 * days, 0]) })
+      
+           }else{
+
+              return dat
+                      .derive({ 'measurementValue': aq.rolling(d => aq.op.average(d.measurementValue), [-24 * days, 0]) })
+      
+           }
+  }
+}
+```
+
+```{ojs filter_general}
+// Low function
+function filter_general(dat, measure){
+// This is just the generic filter function based on the provided measure_type
+  return aq.from(dat)
+        .derive({ time: aq.escape(d => parser(d.local_time)) })
+        .params({
+          m: measure
+        })
+        .filter((d,p) => aq.op.includes(d.type, p.m))
+        .orderby( 'time')
+  
+}
+```
+
+```{ojs calc_raindepth}
+
+// Mid function
+function filter_calculate_raindepth(dat){
+
+  return filter_general(dat,"Rain Gauge")
+           .derive({ 'measurementValue': (d => d.measurementValue * 0.25)}) // each measurement is taken 15 min appart. The measure unit is mm/hr so we convert to mm by dividing 15/60 (15 min / measure * 1 hr / 60 min) = 0.25 hr / measure. Then multiply by the measure to get the total depth (x mm/hr * 0.25 hr/measure = x*0.25 mm / measure)
+             .orderby('time')
+  
+}
+
+```
+
+```{ojs filter_wind}
+// Low Function
+// This does not re-use the general "filter_general" function because it requires two filter elements. 
+function filter_wind(dat){
+  
+   return aq.from(dat) // Start with the `measures` table
+      .derive({ time: aq.escape(d => parser(d.local_time)) })  // Change the time string to a time object based on the provided format
+      .params({ // name column parameters to be used in subsequent steps.
+        m: "Wind Direction Sensor",
+        n: "Wind Speed"
+      })
+      .filter((d,p) => aq.op.includes(d.type, p.m) || aq.op.includes(d.type, p.n)) // Filter the data passed (`d`) based on the type column matching the `Wind Direction Sensor` OR the `Wind Speed`.
+      .orderby( 'time')
+      .groupby('time')
+      .pivot('type','measurementValue') // Expand the unique observations in the `measurementValue` column into their own columns, spreading the data from long to wide.
+      .rename({ 'Wind Direction Sensor': 'direction', 'Wind Speed': 'speed'}) // Simplify the column naming
+      .join_full(aq.table({ // Because not all 360 degrees will have observations, I create an array of 0 - 360 and join the original to it, filling all missing elements with a 0.
+          direction: Array(361)
+            .fill()
+            .map((element, index) => index),
+                speed: Array(361)
+                .fill(0)}))
+      .groupby('direction')
+      .rollup({ // By direction (degree), calculate the average, minimum, and maxiumum speed.
+          avg: d => aq.op.average(d.speed), 
+          min: d => aq.op.min(d.speed), 
+          max: d => aq.op.max(d.speed)})
+      .orderby('direction')
+  
+}
+
+```
+
+```{ojs wind_graph}
+// https://observablehq.com/@d3/radial-area-chart/2?intent=fork
+function wind_graph(dat){
+  const width = 928;
+  const height = width;
+  const margin = 10;
+  const innerRadius = width / 10;
+  const outerRadius = width / 2 - margin;
+  
+  const x = d3.scaleLinear()
+    .domain([d3.min(dat, d => d.direction),d3.max(dat, d => d.direction)])
+    .range([0, 2 * Math.PI]); //[d3.min(dat, d => d.direction),d3.max(dat, d => d.direction)]);
+    
+  const y = d3.scaleRadial()
+    .domain([d3.min(dat, d => d.min), d3.max(dat, d => d.max)])
+    .range([innerRadius, outerRadius]);
+    
+  const line = d3.lineRadial()
+    .curve(d3.curveLinearClosed)
+    .angle(d => x(d.direction));
+    
+  const area = d3.areaRadial()
+    .curve(d3.curveLinearClosed)
+    .angle(d => x(d.direction));
+    
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height])
+      .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round");
+      
+  svg.append("path")
+      .attr("fill", "lightsteelblue")
+      .attr("fill-opacity", 0.3)
+      .attr("d", area
+            .innerRadius(d => y(d.min))
+            .outerRadius(d => y(d.max))
+            (dat));
+      
+  svg.append("path")
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", line
+          .radius(d => y(d.avg))
+          (dat));
+          
+  svg.append("g")
+      .selectAll()
+      .data(x.ticks())
+      .join("g")
+        .each((d, i) => d.id == DOM.uid("degree"))
+        .call(g => g.append("path")
+            .attr("stroke", "#000")
+            .attr("stroke-opacity", 0.2)
+            .attr("d", d => `
+              M${d3.pointRadial(x(d), innerRadius)}
+              L${d3.pointRadial(x(d), outerRadius)}
+              `))
+        
+  svg.append("g")
+      .attr("text-anchor", "middle")
+    .selectAll()
+    .data(y.ticks().reverse())
+    .join("g")
+      .call(g => g.append("circle")
+          .attr("fill", "none")
+          .attr("stroke", "currentColor")
+          .attr("stroke-opacity", 0.2)
+          .attr("r", y))
+      .call(g => g.append("text")
+          .attr("y", d => -y(d))
+          .attr("dy", "0.35em")
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 5)
+         .attr("fill", "currentColor")
+          .attr("paint-order", "stroke")
+          .text((x, i) => `${x.toFixed(2)}${i ? "": " m/s"}`)
+      .clone(true)
+        .attr("y", d => y(d)));
+  
+ return svg.node();
+}
+
+```
+
+```{ojs simple_graph}
+function simple_graph(dat,measure,measure_unit){
+  
+return Plot.plot({
+         title: measure + " Measurement Over Time",
+         marginTop: 20,
+         marginRight: 20,
+         marginBottom: 30,
+         marginLeft: 40,
+         y: {label: measure_unit},
+         x: {grid: true,
+            label: "Date"},
+         marks: [
+           Plot.lineY(dat, {x: "time", y: "measurementValue", stroke: "blue", clip: "frame",tip: true}),
+           Plot.areaY(dat, {x: "time", y: "measurementValue", fillOpacity: 0.2}),
+           Plot.crosshair(dat, {x: "time", y: "measurementValue"}),
+           Plot.frame()
+         ]
+       })
+  
+}
+
+```
+
+```{ojs}
+length = (path) => d3.create("svg:path").attr("d", path).node().getTotalLength();
+```
+
+```{ojs d3chart}
+// https://observablehq.com/@d3/connected-scatterplot/2?intent=fork
+//| echo: false
+function drawchart(dat, dat2){
+
+  const width = 928;
+  const height = 720;
+  const marginTop = 20;
+  const marginRight = 30;
+  const marginBottom = 30;
+  const marginLeft = 40;
+  
+  // Declare the positional encodings.
+  const x = d3.scaleTime()
+      .domain(d3.extent(dat, d => d.time))
+      .range([marginLeft, width - marginRight]);
+      
+  const y = d3.scaleLinear()
+      .domain(d3.extent(dat, d => d.measurementValue)).nice()
+      .range([height - marginBottom, marginTop]);
+      
+  const line = d3.line()
+      .curve(d3.curveCatmullRom)
+      .x(d => x(d.time))
+      .y(d => y(d.measurementValue));
+      
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [0, 0, width, height])
+      .attr("style", "max-width: 100%; height: auto;");
+      
+  const l = length(line(dat));
+  
+  svg.append("g")
+      .attr("transform", `translate(0,${height - marginBottom})`)
+      .call(d3.axisBottom(x).ticks(d3.timeDay))
+      .call(g => g.select(".domain").remove())
+      .call(g => g.selectAll(".tick line").clone()
+          .attr("y2", -height)
+          .attr("stroke-opacity", 0.1))
+      .call(g => g.append("text")
+          .attr("x", width - 4)
+          .attr("y", -4)
+          .attr("font-weight", "bold")
+          .attr("text-anchor", "end")
+          .attr("fill", "currentColor")
+          .text("Date"));
+          
+  svg.append("g")
+      .attr("transform", `translate(${marginLeft},0)`)
+      .call(d3.axisLeft(y).ticks(null, ".2f"))
+      .call(g => g.select(".domain").remove())
+      .call(g => g.selectAll(".tick line").clone()
+          .attr("x2", -width)
+          .attr("stroke-opacity", 0.1))
+      .call(g => g.append("text")
+          .attr("x", 10)
+          .attr("y", height - 4)
+          .attr("text-anchor", "start")
+          .attr("font-weight", "bold")
+          .text("Measure"));
+          
+  svg.append("path")
+      .datum(dat)
+      .attr("fill", "none")
+      .attr("stroke", "blue")
+      .attr("stroke-width", 2.5)
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-linecap", "round")
+      .attr("stroke-dasharray", `0,${l}`)
+      .attr("d", line)
+    .transition()
+      .duration(5000)
+      .ease(d3.easeLinear)
+      .attr("stroke-dasharray", `${l},${l}`);
+      
+      if (typeof dat2 !== 'undefined'){
+      
+         svg.append("path")
+           .datum(dat2)
+           .attr("fill", "none")
+           .attr("stroke", "red")
+           .attr("stroke-width", 2.5)
+           .attr("stroke-linejoin", "round")
+           .attr("stroke-linecap", "round")
+           .attr("stroke-dasharray", `0,${l}`)
+           .attr("d", line)
+         .transition()
+           .duration(5000)
+           .ease(d3.easeLinear)
+           .attr("stroke-dasharray", `${l},${l}`);
+      };
+
+  return svg.node();
+
+}
+
+```

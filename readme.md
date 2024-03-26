@@ -30,17 +30,19 @@ This site is deployed to Google Cloud Platform's Firebase hosting and is served 
 
 As an initial proof of concept, we decided to build a simple website locally using Quarto (https://quarto.org/), the next evolution of RMarkdown (https://rmarkdown.rstudio.com/), and host it on Google Cloud Platform's (GCP) Firebase Hosting platform. We took this approach for several reasons.  
 
-**First**, Quarto notebooks now support using `R`, `python`, `Julia`, and `Observable JS` interchangeably. This allows us to use languages we are familiar with while extending that knowledge into new capabilities better suited for interactive charting on our webpage. To minimize cost, I don't want to build a full application that requires a server like an `R Shiny` (https://shiny.posit.co/) or a `Python Flask` (https://flask.palletsprojects.com/en/3.0.x/) application. `Observable JS` (https://observablehq.com/) or `ojs` provides that in-browser interactive functionality in a static HTML document. This allows us to write all of the database querying functions and data manipulation in `R`, which I'm most familiar with, and then pass that to `ojs` for user reactive data manipulation and charting.  
+**First**, Quarto notebooks now support using `R`, `python`, `Julia`, and `Observable JS` interchangeably. This allows us to use languages we are familiar with while extending that knowledge into new capabilities better suited for interactive charting on our webpage. To minimize cost, I don't want to build a full application that requires a server like an `R Shiny` (https://shiny.posit.co/) or a `Python Flask` (https://flask.palletsprojects.com/en/3.0.x/) application. `Observable JS` (https://observablehq.com/) or `ojs` provides that in-browser interactive functionality in a static HTML document. The first iteration of this project used static data so I used `R` to execute all data extract, transform, and load (ETL) functions because I am most familiar with that language. A downside to this multi-language approach is that the static website is not able to execute `R` (or `python`) on the fly. In light of this limitation, as we transitioned to executing live data pulls, we decided to exclusively use `ojs`. For that reason, the entire project is now written in some sort of java script implementation. We stuck with Quarto to manage and build the website from its markdown language.  
 
-**Second**, we decided to build the website locally to start so we would not need to solve the complexities of providing near real time data from our home weather station to our deployed webpage. That will come in the future, but not yet.  
+**Second**, when deploying new versions of the webpage we build it on our local machine and then push it to the hosting server. In the future we plan to employ GitOps and deploy updates from the project's private GitLab repository.   
 
-**Third**, we decided to use Google's Firebase Hosting platform to host the webpage because it is familiar to us and because we intend to use GCP services to support future builds of the project.  
+**Third**, we decided to use Google Cloud Platform (GCP) offerings to power our cloud storage, manipulations, services, and webpage hosting because Google's Firebase Hosting platform was familiar to us from previous projects and we wanted to learn about GCP.   
 
 ## Architecture
 
 Due to the technical decisions described above, the following are the tools and their interactions we used to implement those decisions. Each tool serves a different purpose and each are described in the following steps.  
 
-All code is contained in the Quarto Markdown Document called [WeatherMeasurements.qmd](R/WeatherMeasurements.qmd). In the following sections of thie "readme" I'll refer to sections by their "Chunk Name" located at the top of each code chunk.
+All code is contained in the Quarto Markdown Document called [weatherStationWebsite.qmd](R/weatherStationWebsite.qmd). When rendered, this document produces the [index.html](R/index.html) file which is served as the main page on our website. It also produces a folder of supporting JS libraries in the `weatherStationWebsite` folder.  
+
+In the following sections of this "readme" I'll refer to sections by their "Chunk Name" located at the top of each code chunk.
 
 ![alt text](img/WeatherSiteArchitecture.png "Weather Site Architecture Diagram")  
 
@@ -203,6 +205,8 @@ A list of resources I found useful are below. Some are referenced in the text ab
   * https://observablehq.com/plot/features/plots  
   * https://d3js.org/  
   * Data manipulation with Arquero [Quarto](https://quarto.org/docs/interactive/ojs/examples/arquero.html) 
+  * [Quarto Layout Specifications](https://quarto.org/docs/authoring/article-layout.html#available-columns)  
+  * [25 Days of D3](https://observablehq.com/@thetylerwolf/25-days-of-d3)
   
   
 How to conditionally show marks in a chart. I want to use this to turn on or off certain measures that make sense to be plotted together.  
